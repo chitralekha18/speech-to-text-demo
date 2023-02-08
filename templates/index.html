@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+    <style>
+        #Progress_Status {
+          width: 50%;
+          background-color: #ddd;
+        }
+        #myprogressBar {
+          width: 2%;
+          height: 20px;
+          background-color: #4CAF50;
+        }
+    </style>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
+      crossorigin="anonymous"
+    />
+    <title>Speech-to-Text</title>
+    <script type="text/javascript" src="https://unpkg.com/wavesurfer.js"></script>
+    <!-- plugins -->
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.minimap.js"></script>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebApplication" class="container pt-5 bg-light">
+    <h1>Speech-to-Text Demo</h1>
+        <!-- Initialize a div for WaveSurfer -->
+        <div id="demo">
+            <div id="waveform"></div>
+        </div>
+        <!-- Text box -->
+        <div class="p-3" style="border: 1px solid gray; height: 300px; border-radius: 8px;">
+            <p id="final">{{ final | safe }}</p>
+          </div>
+        <br>
+        <form action = "/" method = "POST" 
+         enctype = "multipart/form-data">
+         <input type = "file" name = "file" id="fileinput"/>
+         <input onclick="update()" type = "submit"/>
+        </form> 
+        <br>
+        Status 
+        <div id="Progress_Status">
+            <div id="myprogressBar"></div>
+        </div>
+        <br>
+
+    <button class="btn btn-success" data-action="play">
+    <i class="glyphicon glyphicon-play"></i>
+    Play /
+    <i class="glyphicon glyphicon-pause"></i>
+    Pause
+    </button>
+    <button class="btn btn-danger" id="stop" data-action="stop">Stop</button>
+    </body>
+
+    <script>
+        var lowconf_regions = '{{lowconf_regions}}';
+        
+        
+        if (lowconf_regions) {
+            lowconf_regions = lowconf_regions.replaceAll('&#34;','"');
+            lowconf_regions = [JSON.parse(lowconf_regions)];
+            var temp_lowconf = [];
+
+            for (let i=0; i<lowconf_regions[0].length;i++){
+                console.log(lowconf_regions[0][i]["start"]);
+                var dict = {
+                    start: lowconf_regions[0][i]["start"], 
+                    end: lowconf_regions[0][i]["end"],
+                    loop: lowconf_regions[0][i]["loop"],
+                    color: lowconf_regions[0][i]["color"]
+                };
+                temp_lowconf.push(dict);
+
+            }
+            console.log(temp_lowconf);
+
+        // Initialize WaveSurfer
+        var wavesurfer = WaveSurfer.create({
+            container: '#waveform',
+            plugins: [
+                WaveSurfer.regions.create({
+                    // regionsMinLength: 1,
+                    regions: temp_lowconf,//[lowconf_regions]
+                    // [
+                    // { start: 1.7, end: 2.2, loop: false, color: 'hsla(359, 67%, 71%, 0.5)'},{ start: 21.4, end: 22.2, loop: false, color: 'hsla(359, 67%, 71%, 0.5)'},{ start: 27.3, end: 32.0, loop: false, color: 'hsla(359, 67%, 71%, 0.5)'},{ start: 34.1, end: 40.9, loop: false, color: 'hsla(359, 67%, 71%, 0.5)'}
+
+                        // {
+                        //     start: 1.7,
+                        //     end: 2.2,
+                        //     loop: false,
+                        //     color: 'hsla(359, 67%, 71%, 0.5)'
+                        // },
+                        // {
+                        //     start: 21.4,
+                        //     end: 22.2,
+                        //     loop: false,
+                        //     color: 'hsla(359, 67%, 71%, 0.5)' //,
+                        //     // minLength: 1,
+                        //     // maxLength: 5
+                        // },
+                        // {
+                        //     start: 27.3,
+                        //     end: 32.0,
+                        //     loop: false,
+                        //     color: 'hsla(359, 67%, 71%, 0.5)' //,
+                        //     // minLength: 1,
+                        //     // maxLength: 5
+                        // }
+                    // ],
+                    dragSelection: {
+                        slop: 5
+                    }
+                })
+            ]
+        });
+    }
+    else {
+        var wavesurfer = WaveSurfer.create({
+            container: '#waveform'
+        })
+    };
+
+        // Once the user loads a file in the fileinput, the file should be loaded into waveform
+        document.getElementById("fileinput").addEventListener('change', function(e){
+        var file = this.files[0];
+        console.log(file);
+
+        if (file) {
+            /******Display waveform*****/
+            var reader = new FileReader();
+            
+            reader.onload = function (evt) {
+                // Create a Blob providing as first argument a typed array with the file buffer
+                var blob = new window.Blob([new Uint8Array(evt.target.result)]);
+
+                // Load the blob into Wavesurfer
+                wavesurfer.loadBlob(blob);
+            };
+
+            reader.onerror = function (evt) {
+                console.error("An error ocurred reading the file: ", evt);
+            };
+
+            // Read File as an ArrayBuffer
+            reader.readAsArrayBuffer(file);
+            
+                }
+            }, false);
+
+// Play button
+const button = document.querySelector('[data-action="play"]');
+button.addEventListener('click', wavesurfer.playPause.bind(wavesurfer));
+const stopButton = document.querySelector('[data-action="stop"]');
+stopButton.addEventListener('click', wavesurfer.pause.bind(wavesurfer));
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const coloredspans = document.querySelectorAll('p span');
+    
+       coloredspans.forEach((d,count)=>{
+          d.addEventListener('mouseover', function() {
+              d.style.backgroundColor = "#D3D3D3";
+              d.style.cursor = "pointer";
+          });
+          d.addEventListener('mouseout', function() {
+          d.style.backgroundColor = "#E78587";
+          });
+          d.addEventListener('click', function() {
+            console.log(Object.values(wavesurfer.regions.list));
+            console.log(Object.values(wavesurfer.regions.list)[count]);
+                let region = Object.values(wavesurfer.regions.list)[count];
+                region.play();
+          });
+       });
+       });
+    </script>
+
+<script>
+    function update() {
+        var element = document.getElementById("myprogressBar");   
+        var width = 1;
+        var identity = setInterval(scene, 400);
+        function scene() {
+        if (width >= 100) {
+            clearInterval(identity);
+        } else {
+            width++; 
+            element.style.width = width + '%'; 
+            }
+        }
+    }
+</script>
+
+</html>

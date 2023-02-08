@@ -1,0 +1,5 @@
+soundfile
+librosa
+Werkzeug
+Flask
+google-cloud-speech
